@@ -1,0 +1,209 @@
+#!/bin/bash
+
+# This script 
+# 1 - Copies a base/default CoT xml file to cot_node_pos.xml
+# 2 - Then  the script modifies cot_node_pos.xml with the passed
+#     in command line values.
+# Most of time user will just type gtp -o [0:15]
+
+# Rest of the parameters, hopefully, are self explanatory.
+# See usage instructions below.
+
+function print_usage_instructions()
+{
+	echo " "
+	echo "Description:"
+	echo "  This program formats a CoT message and sends it to an IP:port" 
+	echo "  IP is specified by \$2 or hard coded in this file. Default port is 9190"
+	echo "Usage:"
+	echo "  gtp -o pos_idx [-a alt -t lat -n lon -i CoT UID -y CoT Type]"
+	echo "    -o Index to specify desired offset from base lat/lon. See below for details"
+	echo "    -a is optional altitude in meters"
+	echo "    -t is optional base latitude"
+	echo "    -n is optional base longitude"
+	echo "    -i is optional CoT UID"
+	echo "    -y is optional CoT Type"
+	echo " "
+	echo "  Default base lat/lon is 40, -70."
+	echo "  North is 0 degrees:"
+	echo "  East is 90 degrees CW(Clockwise) from North"
+	echo "  The position_index parameter adds an offset to the base lat/lon"
+	echo "    0 - North"
+	echo "    1 - Small  offset CW from North"
+	echo "    2 - Around 45 degrees.."
+	echo "    3 - Somewhere just a tad smaller than 90 degrees. Little north of east."
+	echo "    4 - 90 degrees CW (East)"
+	echo "    5 - Just a tad greater than 90 degrees CW. Little south of east."
+	echo "    6 - Around 135 degrees."
+	echo "    ...."
+	echo "    15 - Just a tad under 360 degrees CW from north."
+	echo "    16 - Overhead at altitude of 5000 meters"
+
+}
+
+# Set default values for script variables
+OFFET_INDEX=-1;
+ALTITUDE_METERS=270;
+BASE_LAT=40.0;
+BASE_LON=-70.0;
+COT_UID=$OPTARG;
+COT_TYPE=$OPTARG;
+
+while getopts ":o:a:t:n:i:y:" opt; do
+	case $opt in
+		o  ) OFFET_INDEX=$OPTARG;;
+		a  ) ALTITUDE_METERS=$OPTARG;;
+		t  ) BASE_LAT=$OPTARG;;
+		n  ) BASE_LON=$OPTARG;;
+		i  ) COT_UID=$OPTARG;;
+		y  ) COT_TYPE=$OPTARG;;
+		\? ) print_usage_instructions;;
+	esac
+done
+shift $(($OPTIND - 1))
+
+
+# OK, we are done getting usage parameteres from user
+# ***************************************************
+
+# Calculate lat/lon offset
+# 16 positions CW from north, more or less in a circle.
+# Four are cardinal directions.
+# Four are more  or less 45, 135, 225, 315 degrees.
+# Four are plus/minus a little bit frome each cardinal directopn.
+case $OFFET_INDEX in
+#North
+0) LAT_OFFSET=0.1;
+   LON_OFFSET=0.0;
+   ;;
+# Tad bit east of north
+1) LAT_OFFSET=0.1;
+   LON_OFFSET=0.01;
+   ;;
+#  Northeast
+2) LAT_OFFSET=0.1;
+   LON_OFFSET=0.1;
+   ;;
+#  Tad bit north of east
+3) LAT_OFFSET=0.01;
+   LON_OFFSET=0.1;
+   ;;
+#  East
+4) LAT_OFFSET=0.0;
+   LON_OFFSET=0.1;
+   ;;
+#  Tad bit south of east
+5) LAT_OFFSET=-0.01;
+   LON_OFFSET=0.1;
+   ;;
+#  Southeast
+6) LAT_OFFSET=-0.1;
+   LON_OFFSET=0.1;
+   ;;
+#  Tad bit east of south
+7) LAT_OFFSET=-0.1;
+   LON_OFFSET=0.01;
+   ;;
+#  South
+8) LAT_OFFSET=-0.1;
+   LON_OFFSET=0.0;
+   ;;
+#  Tad bit west of sout
+9) LAT_OFFSET=-0.1;
+   LON_OFFSET=-0.01;
+   ;;
+#  Southwest
+10) LAT_OFFSET=-0.1;
+    LON_OFFSET=-0.1;
+   ;;
+#  Tad bit south of west
+11) LAT_OFFSET=-0.01;
+    LON_OFFSET=-0.1;
+   ;;
+#  West
+12) LAT_OFFSET=0.0;
+    LON_OFFSET=-0.1;
+   ;;
+#  Tad bit north of west
+13) LAT_OFFSET=0.01;
+    LON_OFFSET=-0.1;
+   ;;
+#  northwest
+14) LAT_OFFSET=0.1;
+    LON_OFFSET=-0.1;
+   ;;
+#  Tad bit west of north
+15) LAT_OFFSET=0.1;
+    LON_OFFSET=-0.01;
+   ;;
+16) LAT_OFFSET=0.0;
+    LON_OFFSET=0.0;
+    ALTITUDE_METERS=5000;
+   ;;
+*) print_usage_instructions;
+   exit;
+   ;;
+esac
+
+# cot_pos_base.xml is always our starting pointt.
+# Copy it to cot_node_pos.xml. This is the file we will modify
+# and send to the node.
+cp cot_pos_base.xml cot_node_pos.xml
+
+# Put CoT UID, CoT Type, ALtitude, and time
+# field, as needed, in file cot_node_pos.xml.
+#********************************************
+# If user passes in optional CoT UID then 
+# change it in cot_node_pos.xml
+if  [ "$COT_UID" != "" ]
+then
+	sed -i -e "s/ReplaceUid/$COT_UID/g" cot_node_pos.xml
+	echo "<"$COT_UID"<"
+fi
+
+# If user passes in optional CoT Type then 
+# change it in cot_node_pos.xml
+if  [ "$COT_TYPE" != "" ]
+then
+	sed -i -e "s/ReplaceType/$COT_TYPE/g" cot_node_pos.xml
+fi
+
+# Did user pass in optional altitude?
+# If not, then efault altitude is 270 meters.
+if [ "$ALTITUDE_METERS" != "" ]
+then
+	sed -i -e "s/ReplaceAlt/$ALTITUDE_METERS/g" cot_node_pos.xml
+fi
+
+# Set the time field in file cot_node_pos.xml to current time.
+# The visualization code does not like receiving out of
+# order and and old CoT data.
+CUR_TIME=$(date +2016-%m-%dT%H:%M:%S.00Z)
+sed -i -e "s/ReplaceTime/$CUR_TIME/g" cot_node_pos.xml
+
+# Set LAT/LON in file cot_node_pos.xml
+# ***********
+function add_offset()
+{
+	#echo params=$1 $2
+	local adjusted_value
+	adjusted_value=$(bc <<< "$1 + $2")
+	#echo adjusted_value=$adjusted_value
+	echo "$adjusted_value"
+}
+# Calculate lat/lon of node and send it to the node.
+# We add the lat/lon offset determined in above  switch statement
+# and add it to the base lat/lon. The base lat/lon has default
+# value of 40, -70. User can specify a new base lat/lon
+# in the command line.
+LAT=$(add_offset $BASE_LAT $LAT_OFFSET)
+LON=$(add_offset $BASE_LON $LON_OFFSET)
+
+# Set the lat and lon field in file cot_node_pos.xmll
+sed -i -e "s/ReplaceLat/$LAT/g" cot_node_pos.xml
+sed -i -e "s/ReplaceLon/$LON/g" cot_node_pos.xml
+
+
+# Send the packet to the node to tell the node its location.
+#***********************************************************
+./send_cot_packets.pl 172.26.1.1 9190 ./cot_node_pos.xml

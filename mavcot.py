@@ -1,17 +1,21 @@
 from pymavlink import mavutil
-import pycot, os, time, datetime, socket, uuid, geoid
+from mavcot import helpers
+import pycot, os, time, datetime, socket
+
 
 # Configure Socket Connection
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-address = ('192.168.2.47', 9190)
+s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+address = ('10.0.64.10', 9190)
 
 # Assert Mavlink 2
 os.environ['mavlink20'] = "1"
 
+
 print("Waiting for MAVLink Socket")
 mav = mavutil.mavlink_connection("udp:127.0.0.1:14550", retries=20)
 
-print("Connecting, waiting for heartbeat")
+print("UDP Listening, waiting for heartbeat")
 mav.wait_heartbeat()
 print("Connected, Waiting for fix")
 mav.wait_gps_fix()
@@ -24,18 +28,8 @@ event = pycot.Event()
 event.version='2.0'
 event.event_type = 'a-f-A-M-F-Q'
 
-event.uid = "Cobalt004.1234" 
+event.uid = "Cobalt008" 
 event.how="m-g"
-
-geoid = geoid.GeoidHeight()
-
-def get_geoid_height(lat, lon):
-	geoid_height = 0
-	try:
-		geoid_height = geoid.get(lat, lon)
-	except Exception as e:
-		print(e)
-	return geoid_height
 
 last_sent_time = time.time()
 
@@ -46,16 +40,14 @@ while True:
 		point.lat = msg.lat / 10000000.0
 		point.lon = msg.lon / 10000000.0
 		alt_msl = msg.alt / 1000.0 
-		point.hae = alt_msl + get_geoid_height(point.lat,point.lon)
+		point.hae = alt_msl + helpers.get_geoid_height(point.lat,point.lon)
 		event.point = point
 		event.time = datetime.datetime.fromtimestamp(time.time())
-		event_xml = event.render(standalone=True, pretty=True)
+		event_xml = event.render(standalone=True)
 		print(event_xml)
 		try:
 			s.sendto(event_xml, address)
-			last_sent_time =time.time()
+			last_sent_time = time.time()
 		except Exception as e:
-			print(e)
+			print('COT Socket Error:', e)
 			time.sleep(1) # Never run faster than 1 Hz when the TCP connection is closed
-
-

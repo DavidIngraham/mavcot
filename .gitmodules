@@ -1,3 +1,6 @@
-[submodule "modules"]
-	path = modules
-	url = git@github.com:DavidIngraham/pycot.git
+[submodule "modules/pycot"]
+	path = modules/pycot
+	url = https://github.com/DavidIngraham/pycot.git
+[submodule "modules/gexml"]
+	path = modules/gexml
+	url = https://github.com/DavidIngraham/gexml.git
