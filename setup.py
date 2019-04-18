@@ -8,5 +8,5 @@ setup(
     author='David Ingraham',
     author_email='davingrahamd@gmail.com',
     long_description=open('README.md').read(),
-    install_requires=['pymavlink', 'pycot'],
+    install_requires=['pymavlink'],
 )
