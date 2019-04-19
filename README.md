@@ -1,2 +1,2 @@
 # MAVCOT
-Publishes Cursor on Target events from a MAVLINK feed
+Publishes Cursor on Target events from a MAVLINK feed via UDP
