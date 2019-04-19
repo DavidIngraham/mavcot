@@ -2,11 +2,11 @@
 
 from pymavlink import mavutil
 from datetime import datetime
-from mavcot import helpers
+import helpers
 import xml.etree.ElementTree as ET
 import os, sys, time, socket, math, ConfigParser
 
-config_path = 'mavcot.conf'
+config_path = '../mavcot.conf'
 # allow user to specify a custom config path
 if len(sys.argv) > 1:
 	config_path = sys.argv[1]
@@ -24,6 +24,8 @@ mavlink_address_string = 'udp:' + mav_address + ':' + str(mav_port)
 cot_address = config.get('cot', 'address')
 cot_port = config.getint('cot', 'port')
 cot_rate_hz = config.getfloat('cot','output_rate_hz')
+cot_uid = config.get('cot', 'uid')
+cot_type = config.get('cot', 'type')
 
 # Configure Socket Connection
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -80,8 +82,8 @@ while True:
 		cot_event_element = ET.Element('event')
 		cot_event_element.set('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance')
 		cot_event_element.set('xmlns:xsd', 'http://www.w3.org/2001/XMLSchema')
-		cot_event_element.set('uid', 'COBALT_UAV')
-		cot_event_element.set('type', 'a-f-A-M-F-Q')
+		cot_event_element.set('uid', cot_uid)
+		cot_event_element.set('type', cot_type)
 		cot_event_element.set('time', timestamp_string)
 		cot_event_element.set('start', timestamp_string)
 		cot_event_element.set('stale', timestamp_string)
