@@ -18,6 +18,9 @@
 import os
 import mmap
 import struct
+import pkg_resources
+
+filepath = pkg_resources.resource_filename(__name__, 'data/egm2008-5.pgm')
 
 class GeoidBadDataFile(Exception):
     pass
@@ -77,7 +80,7 @@ class GeoidHeight(object):
         ( 18,  -36,    2,   0,  -66,  -51, 0,   0,  102,  31),
     )
 
-    def __init__(self, name="data/egm2008-5.pgm"):
+    def __init__(self, name=filepath):
         self.offset = None
         self.scale = None
 

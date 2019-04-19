@@ -1,0 +1,4 @@
+include README.md
+include COPYING.md
+include mavcot/data/*.pgm
+include mavcot/mavcot.conf

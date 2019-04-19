@@ -2,16 +2,15 @@
 
 from pymavlink import mavutil
 from datetime import datetime
-import helpers
+from mavcot.helpers import get_geoid_height
 import xml.etree.ElementTree as ET
-import os, sys, time, socket, math, ConfigParser
+import os, sys, time, socket, math, ConfigParser, pkg_resources
 
-config_path = '../mavcot.conf'
+config_path = pkg_resources.resource_filename('mavcot', 'mavcot.conf')
+
 # allow user to specify a custom config path
 if len(sys.argv) > 1:
 	config_path = sys.argv[1]
-	print(sys.argv)
-	print(config_path)
 
 # Parse user configuration
 config = ConfigParser.RawConfigParser()
@@ -74,7 +73,7 @@ while True:
 		slope_degrees = max(min(slope_degrees, 90), -90) # constrain to +/= 90 deg
 
 		''' CoT height uses HAE, not MSL. Must calculate conversion from Geoid to Ellipsod height '''
-		hae = alt_msl_m + helpers.get_geoid_height(lat,lon)
+		hae = alt_msl_m + get_geoid_height(lat,lon)
 
 		timestamp_string = datetime.now().strftime('%Y-%m-%dT%H:%M:%S.%FZ')
 
