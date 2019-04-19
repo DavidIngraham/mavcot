@@ -1,13 +1,34 @@
+#!/usr/bin/env python2
+
 from pymavlink import mavutil
 from datetime import datetime
 from mavcot import helpers
 import xml.etree.ElementTree as ET
-import os, time, socket, math
+import os, sys, time, socket, math, ConfigParser
+
+config_path = 'mavcot.conf'
+# allow user to specify a custom config path
+if len(sys.argv) > 1:
+	config_path = sys.argv[1]
+	print(sys.argv)
+	print(config_path)
+
+# Parse user configuration
+config = ConfigParser.RawConfigParser()
+config.read(config_path)
+
+mav_address = config.get('mavlink', 'address')
+mav_port = config.getint('mavlink', 'port')
+mavlink_address_string = 'udp:' + mav_address + ':' + str(mav_port)
+
+cot_address = config.get('cot', 'address')
+cot_port = config.getint('cot', 'port')
+cot_rate_hz = config.getfloat('cot','output_rate_hz')
 
 # Configure Socket Connection
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-address = ('10.0.64.10', 9190)
+address = (cot_address, cot_port)
 
 # Assert Mavlink 2
 os.environ['mavlink20'] = "1"
@@ -29,7 +50,7 @@ while True:
 	except Exception as e:
 		print('MAVLink Socket Error', e)
 		msg = None
-	if msg is not None and ((time.time() - last_sent_time) > 1):
+	if msg is not None and ((time.time() - last_sent_time) > (1/cot_rate_hz)):
 
 		''' Extract Position and Velocity Data from Mavlink Message'''
 		lat = msg.lat / 10000000.0
