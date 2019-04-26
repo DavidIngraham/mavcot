@@ -20,6 +20,7 @@ mav_address = config.get('mavlink', 'address')
 mav_port = config.getint('mavlink', 'port')
 mavlink_address_string = 'udp:' + mav_address + ':' + str(mav_port)
 
+
 cot_address = config.get('cot', 'address')
 cot_port = config.getint('cot', 'port')
 cot_rate_hz = config.getfloat('cot','output_rate_hz')
@@ -35,7 +36,7 @@ address = (cot_address, cot_port)
 os.environ['mavlink20'] = "1"
 
 print("Waiting for MAVLink Socket")
-mav = mavutil.mavlink_connection("udp:127.0.0.1:14550", retries=20)
+mav = mavutil.mavlink_connection(mavlink_address_string, retries=20)
 
 print("UDP Listening, waiting for heartbeat")
 mav.wait_heartbeat()
